@@ -1,17 +1,28 @@
-# Use a lightweight base image (Python 3.9 Slim)
-FROM python:3.9-slim
+# Stage 1: Build stage
+FROM python:3.9-slim AS build
 
-# Set working directory inside the container
+# Set the working directory
 WORKDIR /home/data
 
-# Copy the Python script and text files into the container
+# Install dependencies (if necessary)
+RUN pip install --no-cache-dir --upgrade pip
+
+# Copy the script and other necessary files
 COPY script.py /home/data/
-COPY IF-1.txt /home/data/
 COPY AlwaysRememberUsThisWay-1.txt /home/data/
+COPY IF-1.txt /home/data/
 
-# Install required dependencies
-RUN pip install --no-cache-dir nltk
+# Stage 2: Final image
+FROM python:3.9-alpine
 
-# Run the Python script when the container starts
-CMD ["python", "/home/data/script.py"]
- 
+# Set the working directory
+WORKDIR /home/data
+
+# Copy the built files from the previous stage
+COPY --from=build /home/data /home/data/
+
+# Install necessary dependencies in a slim Alpine image
+RUN apk add --no-cache python3 py3-pip
+
+# Run the script
+CMD ["python3", "script.py"]
